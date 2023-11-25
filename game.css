@@ -1,0 +1,12 @@
+body {
+    background-image: url(https://img.freepik.com/free-vector/speed-light-spotlights-digital-background_23-2148821702.jpg?w=996&t=st=1700889857~exp=1700890457~hmac=10fdeadd6704368412a6ef0f4121c9f9d814fae16144b226f7e2684aca9804d7);
+    background-repeat: no-repeat;
+    background-size: cover;
+    margin: 0;
+    overflow: hidden; /* Prevent scrollbars */
+}
+
+canvas {
+    display: block;
+    border: 1px solid #000;
+}

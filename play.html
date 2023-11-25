@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="play.css">
+    <style>
+        body {
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .name,
+        .nickname,
+        .help {
+            text-align: center;
+            max-width: 400px; /* Set the maximum width for these divs */
+            margin: 0 auto; /* Center the divs */
+        }
+
+        .play-button {
+            display: none;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flinch Ball</title>
+</head>
+
+<body>
+    <header>
+        <h1 class="title">Flinch Ball</h1>
+    </header>
+
+    <div class="instructions">
+        <h1 class="heading">INSTRUCTIONS</h1>
+        <H2>Help the ball  go up and down to avoid all the obstacles using spacebar/enter key. <br>Avoid obstacles for as long as you can and score more points</H2>
+    </div>
+
+    <div class="name">
+        <form action="javascript:void(0);" method="post" id="nameForm">
+            <label for="firstName">Enter your name:</label>
+            <input type="text" id="firstName" name="firstName" pattern="[A-Za-z]+" title="Only letters are allowed" required><br>
+    
+            <label for="lastName">Enter a username:</label>
+            <input type="text" id="lastName" name="lastName" pattern="[A-Za-z]+" title="Only letters are allowed" required><br>
+
+            <input type="button" value="Submit" onclick="submitForm()" style="background-color: rgb(93, 180, 209); border-radius: 10px; padding: 5px; margin-top: 10px;">
+        </form>
+    </div> 
+    <div class="nickname" id="nicknameDiv" style="display: none;">
+        <h2 style="color: aqua;">Nickname: <span id="nicknameDisplay"></span></h2>
+    </div>
+
+    <div class="help" style="display: none;">
+        <h1>Let's Flinch the ball and win</h1>
+    </div>
+
+    <!-- The play button is hidden by default and will be shown after the form is submitted -->
+    <a href="game.html" class="play-button" id="playButton" style="display: none;">play</a>        
+
+    <script src="game.js"></script>
+    <script>
+        function submitForm() {
+            var firstName = document.getElementById("firstName").value;
+            var lastName = document.getElementById("lastName").value;
+
+            // Check if both first and last names contain only letters
+            if (/^[A-Za-z]+$/.test(firstName) && /^[A-Za-z]+$/.test(lastName)) {
+                // Display the nickname
+                var nickname = lastName;
+                document.getElementById("nicknameDisplay").textContent = nickname;
+
+                // Hide the form and display the nickname, help, and play button
+                document.getElementById("nameForm").style.display = "none";
+                document.getElementsByClassName("help")[0].style.display = "block";
+                document.getElementById("nicknameDiv").style.display = "block";
+
+                // Display the play button and center it
+                var playButton = document.getElementById("playButton");
+                playButton.style.display = "block";
+                playButton.style.margin = "20px auto";
+                
+                // Set the href attribute to include the nickname parameter
+                playButton.href = 'game.html?nickname=' + nickname;
+
+                // Set the nickname in local storage
+                localStorage.setItem('nickname', nickname);
+
+                // Set the nickname for the game.js file to access
+                window.nickname = nickname;
+            } else {
+                alert("Please fill in the form with valid names (only letters allowed).");
+            }
+        }
+    </script>
+</body>
+</html>

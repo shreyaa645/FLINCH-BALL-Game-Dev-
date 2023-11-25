@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="retry.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flinch Ball</title>
+</head>
+
+<body>
+    <div class="game-over">
+        <h1 class="heading">GAME<br> OVER!</h1>
+        <H2>UH OH! <br>Looks like ball hit the obstacle. <br> You played well.</H2>
+        <H3 id="final-score"></H3>
+    </div>
+
+    <div class="help">
+        <h1>Flinch the Ball</h1>
+    </div>
+    
+    <div>
+        <a href="play.html" class="retry-button">RETRY</a>
+    </div>
+
+    <script>
+        // Retrieve the final score and nickname from local storage
+        var finalScore = localStorage.getItem('finalScore');
+        var finalNickname = localStorage.getItem('finalNickname');
+
+        // Display the final score on the page
+        var finalScoreElement = document.getElementById('final-score');
+        finalScoreElement.textContent = `${finalNickname}'s FINAL SCORE : ${finalScore}`;
+    </script>
+</body>
+</html>

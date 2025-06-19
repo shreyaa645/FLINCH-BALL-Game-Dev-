@@ -1,12 +1,33 @@
 body {
-    background-image: url(https://img.freepik.com/free-vector/speed-light-spotlights-digital-background_23-2148821702.jpg?w=996&t=st=1700889857~exp=1700890457~hmac=10fdeadd6704368412a6ef0f4121c9f9d814fae16144b226f7e2684aca9804d7);
-    background-repeat: no-repeat;
-    background-size: cover;
     margin: 0;
-    overflow: hidden; /* Prevent scrollbars */
+    overflow: hidden;
+    background: linear-gradient(-45deg, rgb(0, 145, 145), #001a1a, #000033, rgb(0, 145, 145));
+    background-size: 600% 600%;
+    animation: glowwave 20s ease infinite;
+}
+
+@keyframes glowwave {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 canvas {
     display: block;
-    border: 1px solid #000;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+}
+
+@media screen and (max-width: 768px) {
+    canvas {
+        height: 100vh;
+        width: 100vw;
+    }
 }

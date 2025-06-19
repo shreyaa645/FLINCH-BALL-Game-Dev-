@@ -1,45 +1,87 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-let spacebarPressed = false;
-var urlParams = new URLSearchParams(window.location.search);
-var nickname = urlParams.get('nickname');
 const backgroundAudio = document.getElementById('background-audio');
 const hitAudio = document.getElementById('hit-audio');
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+let spacebarPressed = false;
+let score = 0;
+let paused = false;
 
 const fish = {
-    x: 50,
-    y: canvas.height / 2 - 15,
+    x: 60,
+    y: 200,
     width: 30,
     height: 30,
-    color: 'aqua',
     velocity: 0,
     gravity: 0.5,
-    jumpStrength: 8,
-    wobbleSpeed: 0.1,
-    wobbleDistance: 10,
-    wobbleDirection: 1
+    jumpStrength: 8
 };
 
 const obstacles = [];
-const particles = [];
+const gap = 180;
+let particles = [];
 
-let obstacleSpawnDistance = 0;
-const minObstacleDistance = 500; // Set a minimum distance for obstacle spawning
-const maxObstacleDistance = 800; // Set a maximum distance for obstacle spawning
-let gap = 300;
-let score = 0;
+// Set canvas size
+function setCanvasSize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+setCanvasSize();
+window.addEventListener('resize', setCanvasSize);
 
+// Glowing ball
 function drawFish() {
+    const centerX = fish.x + fish.width / 2;
+    const centerY = fish.y + fish.height / 2;
+    const radius = fish.width / 2;
+
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+    gradient.addColorStop(0, "#00fff7");
+    gradient.addColorStop(1, "rgba(0, 255, 255, 0)");
+
     ctx.beginPath();
-    ctx.arc(fish.x + fish.width / 2, fish.y + fish.height / 2, fish.width / 2, 0, Math.PI * 2);
-    ctx.fillStyle = fish.color;
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
     ctx.fill();
     ctx.closePath();
 }
 
+// Particle class (subtle trail)
+class Particle {
+    constructor(x, y) {
+        this.x = x + (Math.random() * 10 - 5);
+        this.y = y + (Math.random() * 10 - 5);
+        this.radius = Math.random() * 2 + 0.5;
+        this.alpha = 0.3 + Math.random() * 0.3;
+    }
+
+    update() {
+        this.alpha -= 0.005;
+    }
+
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 255, 247, ${this.alpha})`;
+        ctx.fill();
+    }
+}
+
+// Glowing obstacles
+function drawObstacles() {
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#0ff';
+    for (const obs of obstacles) {
+        const grd = ctx.createLinearGradient(obs.x, obs.y, obs.x + obs.width, obs.y + obs.height);
+        grd.addColorStop(0, "#00fff7");
+        grd.addColorStop(1, "#0099ff");
+        ctx.fillStyle = grd;
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+    }
+    ctx.shadowBlur = 0;
+}
+
+// Update fish position
 function updateFish() {
     fish.velocity += fish.gravity;
     fish.y += fish.velocity;
@@ -48,220 +90,121 @@ function updateFish() {
         fish.y = 0;
         fish.velocity = 0;
     }
-
     if (fish.y + fish.height > canvas.height) {
         fish.y = canvas.height - fish.height;
         fish.velocity = 0;
     }
-
-    if (!spacebarPressed) {
-        fish.y += fish.wobbleSpeed * fish.wobbleDirection;
-        if (Math.abs(fish.y - (canvas.height / 2 - 15)) >= fish.wobbleDistance) {
-            fish.wobbleDirection *= -1;
-        }
-    }
 }
 
-function drawObstacles() {
-    for (const obstacle of obstacles) {
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-    }
-}
-
-function handleObstacles() {
-    obstacleSpawnDistance -= gamespeed;
-
-    if (obstacleSpawnDistance <= 0) {
-        const obstacleHeight = Math.random() * (canvas.height - 200) + 50;
-
-        const newObstacle = {
-            x: canvas.width + 70,
-            y: 0,
-            width: 30,
-            height: obstacleHeight,
-            color: 'blue',
-        };
-
-        // Check if the new obstacle overlaps with existing ones
-        if (!obstaclesOverlap(newObstacle)) {
-            obstacles.push(newObstacle);
-
-            obstacles.push({
-                x: canvas.width,
-                y: newObstacle.height + gap,
-                width: 30,
-                height: canvas.height - newObstacle.height - gap,
-                color: 'blue',
-            });
-
-            obstacleSpawnDistance = getRandomDistance();
-            gap = getNewGap();
-        }
-    }
-
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        obstacles[i].x -= 2;
-
-        if (obstacles[i].x + obstacles[i].width < 0) {
-            obstacles.splice(i, 1);
-        }
-    }
-}
-
-function getRandomDistance() {
-    return Math.random() * (maxObstacleDistance - minObstacleDistance) + minObstacleDistance;
-}
-
-function getNewGap() {
-    return 300;
-}
-
+// Update obstacles
 function updateObstacles() {
     for (let i = obstacles.length - 1; i >= 0; i--) {
         obstacles[i].x -= 3;
 
-        const fishCenterX = fish.x + fish.width / 2;
-        const fishCenterY = fish.y + fish.height / 2;
-        const obstacleCenterX = obstacles[i].x + obstacles[i].width / 2;
-        const obstacleCenterY = obstacles[i].y + obstacles[i].height / 2;
+        if (obstacles[i].x + obstacles[i].width < 0) {
+            obstacles.splice(i, 1);
+        }
 
-        const halfWidth = obstacles[i].width / 2;
-        const halfHeight = obstacles[i].height / 2;
+        const fishX = fish.x + fish.width / 2;
+        const fishY = fish.y + fish.height / 2;
 
-        const isInsideX = fishCenterX > obstacles[i].x && fishCenterX < obstacles[i].x + obstacles[i].width;
-        const isInsideY = fishCenterY > obstacles[i].y && fishCenterY < obstacles[i].y + obstacles[i].height;
+        const inX = fishX > obstacles[i].x && fishX < obstacles[i].x + obstacles[i].width;
+        const inY = fishY > obstacles[i].y && fishY < obstacles[i].y + obstacles[i].height;
 
-        if (isInsideX && isInsideY) {
+        if (inX && inY) {
             hitAudio.play();
             gameOver();
         }
-    } 
+    }
 
-    if (Math.random() < 0.008) { // Reduce the probability of obstacle creation
-        const obstacleHeight = Math.random() * (canvas.height - 200) + 50;
-        obstacles.push({
-            x: canvas.width + 60,
-            y: 4,
-            width: 30,
-            height: obstacleHeight,
-            color: 'blue'
-        });
+    if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 300) {
+        const height = Math.floor(Math.random() * (canvas.height - gap - 100)) + 50;
+        const width = 40;
 
         obstacles.push({
-            x: canvas.width + 100,
-            y: obstacleHeight + 200,
-            width: 30,
-            height: canvas.height - obstacleHeight - 50,
-            color: 'blue'
+            x: canvas.width,
+            y: 0,
+            width: width,
+            height: height
+        });
+
+        obstacles.push({
+            x: canvas.width,
+            y: height + gap,
+            width: width,
+            height: canvas.height - height - gap
         });
     }
 }
 
-
-
-function drawParticles() {
-    for (const particle of particles) {
-        const gradient = ctx.createRadialGradient(
-            particle.x, particle.y, 0,
-            particle.x, particle.y, 3
-        );
-
-        gradient.addColorStop(0, spacebarPressed ? 'blue' : 'yellow');
-        gradient.addColorStop(1, 'transparent');
-
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.closePath();
-    }
+// Score display
+function drawScore() {
+    ctx.font = "bold 24px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    ctx.fillStyle = "#00fff7";
+    ctx.shadowColor = "#0ff";
+    ctx.shadowBlur = 10;
+    ctx.fillText("Score: " + score, 30, 40);
+    ctx.shadowBlur = 0;
 }
 
-function updateParticles() {
-    if (!spacebarPressed && Math.random() < 0.2) {
-        particles.push({
-            x: fish.x,
-            y: fish.y + fish.height / 2,
-        });
-    }
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].x -= 2;
-
-        if (particles[i].x < 0) {
-            particles.splice(i, 1);
-        }
-    }
-}
-
+// Draw loop
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    backgroundAudio.play();
-    var urlParams = new URLSearchParams(window.location.search);
-    var nickname = urlParams.get('nickname');
 
-    ctx.fillStyle = 'aqua';
-    ctx.font = '20px Arial';
-    ctx.fillText(nickname + "'s Score: " + score, 20, 30);
+    // ✨ Particle trail (subtle)
+    if (score % 2 === 0) {
+        particles.push(new Particle(fish.x + fish.width / 2, fish.y + fish.height / 2));
+    }
+    particles = particles.filter(p => p.alpha > 0);
+    particles.forEach(p => {
+        p.update();
+        p.draw();
+    });
 
     drawFish();
     drawObstacles();
-    drawParticles();
+    drawScore();
 
     requestAnimationFrame(draw);
 }
 
-function resetGame() {
-    fish.y = canvas.height / 2 - 15;
-    fish.velocity = 0;
-    obstacles.length = 0;
-    score = 0;
+// Game over
+function gameOver() {
+    localStorage.setItem("finalScore", score);
+    localStorage.setItem("finalNickname", localStorage.getItem("nickname") || "");
+    setTimeout(() => {
+        window.location.href = "retry.html";
+    }, 400);
 }
 
+// Controls
 function jump() {
     fish.velocity = -fish.jumpStrength;
-
-    for (let i = 0; i < 5; i++) {
-        particles.push({
-            x: fish.x,
-            y: fish.y + fish.height / 2,
-        });
-    }
 }
 
-function gameOver() {
-    var nickname = localStorage.getItem('nickname');
-    localStorage.setItem('finalScore', score);
-    localStorage.setItem('finalNickname', nickname);
-
-    resetGame();
-
-    setTimeout(function () {
-        window.location.href = 'retry.html';
-    }, 300); 
-}
-
-document.addEventListener('keydown', function (event) {
-    if (event.code === 'Space') {
+document.addEventListener("keydown", e => {
+    if (e.code === "Space" || e.code === "Enter") {
         spacebarPressed = true;
         jump();
+        backgroundAudio.play();
+    } else if (e.code === "KeyP") {
+        paused = !paused;
     }
 });
 
-document.addEventListener('keyup', function (event) {
-    if (event.code === 'Space') {
+document.addEventListener("keyup", e => {
+    if (e.code === "Space" || e.code === "Enter") {
         spacebarPressed = false;
     }
 });
 
-resetGame();
+// Main update loop
+setInterval(() => {
+    if (!paused) {
+        updateFish();
+        updateObstacles();
+        score++;
+    }
+}, 1000 / 60);
+
 draw();
-
-setInterval(function () {
-    updateFish();
-    updateObstacles();
-    updateParticles();
-    score += 1; 
-}, 1000 / 40);
-
